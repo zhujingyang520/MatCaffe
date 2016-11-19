@@ -103,5 +103,26 @@ end
 vis_square(net.layers('conv1').params(1).get_data());
 title('Kernels of CONV1 in CaffeNet');
 
+%% Time evaluation on CPU
+fprintf('Evaulate execution time on CPU ...\n');
+% vary the batch sizes
+batch_sizes = [1 2 4 6 8 10 20];
+exe_times = zeros(size(batch_sizes));
+for i = 1 : length(batch_sizes)
+    fprintf('@ batch size %d: ', batch_sizes(i));
+    net.blobs('data').reshape([227 227 3 batch_sizes(i)]); 
+    input_data = repmat(transformed_image, [1 1 1 batch_sizes(i)]);
+    func_handler = @() net.forward({input_data});
+    exe_times(i) = timeit(func_handler);
+    fprintf('%fs\n', exe_times(i));
+end
+
+figure; plot(batch_sizes, exe_times, 'o-', 'LineWidth', 2);
+xlabel('Batch size'); ylabel('Execution time (s)');
+title('Execution time of CaffeNet on CPU');
+throughput = exe_times ./ batch_sizes;
+fprintf('Execution time: Avg: %fs; Best: %fs; Worst: %fs\n', ...
+    mean(throughput), min(throughput), max(throughput));
+
 %% Clear nets and solvers
 caffe.reset_all();
